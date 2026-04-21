@@ -64,30 +64,43 @@ func (m model) renderPlayerLine() string {
 		return truncate(status, m.width)
 	}
 	if m.current == nil {
-		return styleAccent.Render("-") + styleDim.Render(" rlp - [space] select/search")
+		return styleAccent.Render("[rlp]") + styleDim.Render(" [space] select/search")
 	}
-	spinFrames := []string{"-", "\\", "|", "/"}
-	sym := spinFrames[m.spinFrame%len(spinFrames)]
-	if !m.connecting {
-		sym = "-"
-	}
-	prefix := styleAccent.Render(sym) + " "
-	info := m.current.Name
-	if m.current.Country != "" {
-		info += " @ " + m.current.Country
-	}
-	suffix := ""
-	if m.current.Bitrate > 0 {
-		suffix = styleDim.Render(fmt.Sprintf("  %dkbps", m.current.Bitrate))
-	}
+
+	prefix := styleAccent.Render("[rlp]") + " "
 	prefixW := lipgloss.Width(prefix)
-	suffixW := lipgloss.Width(suffix)
-	return prefix + truncate(info, m.width-prefixW-suffixW) + suffix
+	avail := m.width - prefixW
+
+	station := m.current.Name
+	if m.current.Country != "" {
+		station += " [" + abbrevCountry(m.current.Country) + "]"
+	}
+
+	const sep = "  |  "
+	var line string
+	if m.trackTitle == "" {
+		line = truncate(station, avail)
+	} else {
+		stationW := runewidth.StringWidth(station)
+		trackW := runewidth.StringWidth(m.trackTitle)
+		if stationW+len(sep)+trackW <= avail {
+			line = station + sep + m.trackTitle
+		} else if remaining := avail - stationW - len(sep); remaining > 4 {
+			line = station + sep + runewidth.Truncate(m.trackTitle, remaining, "…")
+		} else {
+			line = truncate(station, avail)
+		}
+	}
+
+	if m.playing {
+		return prefix + grad.Render(line)
+	}
+	return prefix + line
 }
 
 func (m model) renderWithSearchPopup() string {
 	popup := m.buildSearchPopup()
-	hints := styleDim.Render("←→:mode  ↑↓:move  type:filter  enter:select  esc:back")
+	hints := renderHints([]string{"←→", "mode"}, []string{"↑↓", "select"}, []string{"type", "filter"}, []string{"enter", "search"}, []string{"esc", "back"})
 	return overlay(hints, popup, m.width, m.height)
 }
 
@@ -193,29 +206,25 @@ func (m model) buildSearchPopup() string {
 }
 
 func (m model) renderWithStationPopup() string {
+	hints := renderHints([]string{"↑↓", "move"}, []string{"enter", "play"}, []string{"esc", "back"})
 	if m.stationLoading {
 		popup := renderPopupBox("stations", []string{"loading..."}, nil, -1, -1, 0, "", false, m.width, m.height)
-		return overlay(m.renderPlayerLine(), popup, m.width, m.height)
+		return overlay(hints, popup, m.width, m.height)
 	}
 	items := make([]string, len(m.stations))
 	rightLabels := make([]string, len(m.stations))
 	for i, s := range m.stations {
 		items[i] = s.Name
-		parts := []string{}
 		if s.Country != "" {
-			parts = append(parts, s.Country)
+			rightLabels[i] = abbrevCountry(s.Country)
 		}
-		if s.Bitrate > 0 {
-			parts = append(parts, fmt.Sprintf("%dkbps", s.Bitrate))
-		}
-		rightLabels[i] = strings.Join(parts, " ")
 	}
 	if len(items) == 0 {
 		items = []string{"(no stations)"}
 		rightLabels = nil
 	}
 	popup := renderPopupBox("stations", items, rightLabels, m.stationCursor, len(m.stations), m.stationStart, "", false, m.width, m.height)
-	return overlay(m.renderPlayerLine(), popup, m.width, m.height)
+	return overlay(hints, popup, m.width, m.height)
 }
 
 func renderPopupBox(title string, items, rightLabels []string, cursor, total, start int, filter string, filterActive bool, termW, termH int) string {
@@ -369,6 +378,112 @@ func overlay(base, popup string, termW, termH int) string {
 	sb.WriteString("\n")
 	sb.WriteString(base)
 	return sb.String()
+}
+
+func renderHints(pairs ...[]string) string {
+	parts := make([]string, len(pairs))
+	for i, p := range pairs {
+		parts[i] = styleAccent.Render(p[0]) + styleDim.Render(":"+p[1])
+	}
+	return strings.Join(parts, styleDim.Render("  "))
+}
+
+var countryAbbr = map[string]string{
+	"The United Kingdom of Great Britain and Northern Ireland": "UK",
+	"United Kingdom":                "UK",
+	"United States of America":      "US",
+	"The United States Of America":  "US",
+	"The United States of America":  "US",
+	"Germany":                       "DE",
+	"France":                        "FR",
+	"Japan":                         "JP",
+	"Canada":                        "CA",
+	"Australia":                     "AU",
+	"Brazil":                        "BR",
+	"Netherlands":                   "NL",
+	"Spain":                         "ES",
+	"Italy":                         "IT",
+	"Russia":                        "RU",
+	"Poland":                        "PL",
+	"Sweden":                        "SE",
+	"Norway":                        "NO",
+	"Denmark":                       "DK",
+	"Finland":                       "FI",
+	"Switzerland":                   "CH",
+	"Austria":                       "AT",
+	"Belgium":                       "BE",
+	"Portugal":                      "PT",
+	"Mexico":                        "MX",
+	"Argentina":                     "AR",
+	"China":                         "CN",
+	"India":                         "IN",
+	"South Korea":                   "KR",
+	"Korea, Republic of":            "KR",
+	"Turkey":                        "TR",
+	"Ukraine":                       "UA",
+	"Czech Republic":                "CZ",
+	"Czechia":                       "CZ",
+	"Hungary":                       "HU",
+	"Romania":                       "RO",
+	"Greece":                        "GR",
+	"Bulgaria":                      "BG",
+	"Croatia":                       "HR",
+	"Slovakia":                      "SK",
+	"Serbia":                        "RS",
+	"Ireland":                       "IE",
+	"New Zealand":                   "NZ",
+	"South Africa":                  "ZA",
+	"Israel":                        "IL",
+	"Thailand":                      "TH",
+	"Indonesia":                     "ID",
+	"Malaysia":                      "MY",
+	"Philippines":                   "PH",
+	"Vietnam":                       "VN",
+	"Pakistan":                      "PK",
+	"Bangladesh":                    "BD",
+	"Iran":                          "IR",
+	"Egypt":                         "EG",
+	"Nigeria":                       "NG",
+	"Colombia":                      "CO",
+	"Chile":                         "CL",
+	"Peru":                          "PE",
+	"Cuba":                          "CU",
+	"Iceland":                       "IS",
+	"Luxembourg":                    "LU",
+	"Slovenia":                      "SI",
+	"Lithuania":                     "LT",
+	"Latvia":                        "LV",
+	"Estonia":                       "EE",
+	"Belarus":                       "BY",
+	"Georgia":                       "GE",
+	"Armenia":                       "AM",
+	"Azerbaijan":                    "AZ",
+	"Kazakhstan":                    "KZ",
+	"Taiwan":                        "TW",
+	"Taiwan, Province of China":     "TW",
+	"Hong Kong":                     "HK",
+	"Singapore":                     "SG",
+	"Saudi Arabia":                  "SA",
+	"United Arab Emirates":          "AE",
+	"Morocco":                       "MA",
+	"Algeria":                       "DZ",
+	"Tunisia":                       "TN",
+	"Kenya":                         "KE",
+	"Ethiopia":                      "ET",
+	"Ghana":                         "GH",
+}
+
+func abbrevCountry(name string) string {
+	if abbr, ok := countryAbbr[name]; ok {
+		return abbr
+	}
+	lower := strings.ToLower(name)
+	for k, v := range countryAbbr {
+		if strings.ToLower(k) == lower {
+			return v
+		}
+	}
+	return name
 }
 
 func truncate(s string, maxRunes int) string {

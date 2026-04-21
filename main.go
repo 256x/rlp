@@ -15,6 +15,7 @@ func main() {
 	flag.Parse()
 
 	initStyles()
+	initGradient()
 	m := newModel(*selectFlag)
 
 	if !*selectFlag {

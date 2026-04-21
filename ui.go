@@ -51,6 +51,7 @@ type listLoadedMsg struct {
 type statusMsg struct{ Text string }
 type tickMsg time.Time
 type stationSelectedExternalMsg struct{ Station Station }
+type trackTitleMsg struct{ Title string }
 
 // --- mpv management ---
 
@@ -94,7 +95,7 @@ type model struct {
 	current    *Station
 	playing    bool
 	connecting bool
-	spinFrame  int
+	trackTitle string
 
 	// status
 	statusMsg    string
@@ -188,7 +189,9 @@ func fetchStationsCmd(mode searchMode, query string) tea.Cmd {
 func playCmd(s Station) tea.Cmd {
 	return func() tea.Msg {
 		stopStation()
-		cmd := exec.Command("mpv", "--no-video", "--no-terminal", "--really-quiet", s.URL)
+		_ = os.Remove(mpvSocket)
+		cmd := exec.Command("mpv", "--no-video", "--no-terminal", "--really-quiet",
+			"--input-ipc-server="+mpvSocket, s.URL)
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 		if err := cmd.Start(); err != nil {
 			return statusMsg{Text: "failed to play: " + err.Error()}
@@ -216,6 +219,20 @@ func vizTick() tea.Cmd {
 func connectTimer() tea.Cmd {
 	return tea.Tick(4*time.Second, func(time.Time) tea.Msg {
 		return connectedMsg{}
+	})
+}
+
+func trackPoll() tea.Cmd {
+	return func() tea.Msg {
+		title, _ := fetchIcyTitle()
+		return trackTitleMsg{Title: title}
+	}
+}
+
+func trackPollDelayed() tea.Cmd {
+	return tea.Tick(5*time.Second, func(time.Time) tea.Msg {
+		title, _ := fetchIcyTitle()
+		return trackTitleMsg{Title: title}
 	})
 }
 
@@ -265,28 +282,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.current = &s
 		m.playing = true
 		m.connecting = true
-		m.spinFrame = 0
+		m.trackTitle = ""
 		return m, tea.Batch(vizTick(), connectTimer())
 
 	case vizTickMsg:
-		m.spinFrame++
-		if m.connecting {
+		grad.Tick(m.connecting, m.playing)
+		if m.connecting || m.playing {
 			return m, vizTick()
 		}
 
 	case connectedMsg:
 		m.connecting = false
+		return m, trackPoll()
+
+	case trackTitleMsg:
+		m.trackTitle = msg.Title
+		if m.playing {
+			return m, trackPollDelayed()
+		}
 
 	case mpvExitedMsg:
 		m.connecting = false
 		m.playing = false
+		m.trackTitle = ""
 		m.setStatus("stream ended or unreachable")
 
 	case stationSelectedExternalMsg:
 		m.current = &msg.Station
 		m.playing = true
 		m.connecting = true
-		m.spinFrame = 0
+		m.trackTitle = ""
 		return m, tea.Batch(vizTick(), connectTimer())
 
 	case listLoadedMsg:
