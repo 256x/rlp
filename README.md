@@ -1,10 +1,8 @@
 # rlp
 
-A minimal one-line terminal radio player powered by [radio-browser.info](https://www.radio-browser.info/).
+**one-line terminal Internet radio list player powered by [radio-browser.info](https://www.radio-browser.info/).**
 
-```
-- NHK World Radio Japan @ Japan  128kbps
-```
+![rlp](https://github.com/user-attachments/assets/fd0cd74e-8ecf-4077-852c-7ea064e4216f)
 
 Built with [Bubbletea](https://github.com/charmbracelet/bubbletea). Designed to live in a single tmux or Zellij pane.
 
