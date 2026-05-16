@@ -5,8 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync/atomic"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -24,7 +22,7 @@ const (
 type searchMode int
 
 const (
-	modeGenre    searchMode = iota
+	modeGenre searchMode = iota
 	modeCountry
 	modeLanguage
 	modeName
@@ -53,20 +51,6 @@ type tickMsg time.Time
 type stationSelectedExternalMsg struct{ Station Station }
 type trackTitleMsg struct{ Title string }
 
-// --- mpv management ---
-
-var mpvProc *exec.Cmd
-var mpvGeneration int64
-
-func stopStation() {
-	atomic.AddInt64(&mpvGeneration, 1) // invalidate any running watcher
-	if mpvProc != nil {
-		_ = mpvProc.Process.Kill()
-		mpvProc = nil
-	}
-	killSavedMpv()
-}
-
 // --- model ---
 
 type model struct {
@@ -76,14 +60,14 @@ type model struct {
 	selectMode    bool
 
 	// search popup
-	searchMode     searchMode
-	searchFilter   string
-	searchCursor   int
-	searchStart    int
-	searchLoading  bool
-	countries      []string
-	languages      []string
-	filteredItems  []string
+	searchMode    searchMode
+	searchFilter  string
+	searchCursor  int
+	searchStart   int
+	searchLoading bool
+	countries     []string
+	languages     []string
+	filteredItems []string
 
 	// station popup
 	stations       []Station
@@ -183,30 +167,6 @@ func fetchStationsCmd(mode searchMode, query string) tea.Cmd {
 			stations, err = FetchStationsByName(query)
 		}
 		return stationsLoadedMsg{Stations: stations, Err: err}
-	}
-}
-
-func playCmd(s Station) tea.Cmd {
-	return func() tea.Msg {
-		stopStation()
-		_ = os.Remove(mpvSocket)
-		cmd := exec.Command("mpv", "--no-video", "--no-terminal", "--really-quiet",
-			"--input-ipc-server="+mpvSocket, s.URL)
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-		if err := cmd.Start(); err != nil {
-			return statusMsg{Text: "failed to play: " + err.Error()}
-		}
-		mpvProc = cmd
-		gen := atomic.AddInt64(&mpvGeneration, 1)
-		savePID(cmd.Process.Pid)
-		_ = SaveCurrentStation(s)
-		go func() {
-			cmd.Wait()
-			if atomic.LoadInt64(&mpvGeneration) == gen && rlpProgram != nil {
-				rlpProgram.Send(mpvExitedMsg{})
-			}
-		}()
-		return playStartedMsg{Station: s}
 	}
 }
 

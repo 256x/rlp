@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
-	"syscall"
 	"time"
 )
 
@@ -38,12 +35,6 @@ func LoadCurrentStation() (Station, error) {
 	return s, json.Unmarshal(data, &s)
 }
 
-func savePID(pid int) {
-	path := cachePath("mpv.pid")
-	_ = os.MkdirAll(filepath.Dir(path), 0o755)
-	_ = os.WriteFile(path, []byte(strconv.Itoa(pid)), 0o644)
-}
-
 const listCacheTTL = 24 * time.Hour
 
 func SaveListCache(name string, items []string) error {
@@ -71,36 +62,4 @@ func LoadListCache(name string) ([]string, error) {
 	}
 	var items []string
 	return items, json.Unmarshal(data, &items)
-}
-
-func isMpvRunning() bool {
-	data, err := os.ReadFile(cachePath("mpv.pid"))
-	if err != nil {
-		return false
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil {
-		return false
-	}
-	p, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	// signal 0 checks if process exists without killing it
-	return p.Signal(syscall.Signal(0)) == nil
-}
-
-func killSavedMpv() {
-	data, err := os.ReadFile(cachePath("mpv.pid"))
-	if err != nil {
-		return
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil {
-		return
-	}
-	if p, err := os.FindProcess(pid); err == nil {
-		_ = p.Kill()
-	}
-	_ = os.Remove(cachePath("mpv.pid"))
 }

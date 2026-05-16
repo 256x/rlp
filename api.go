@@ -49,12 +49,7 @@ type Station struct {
 	URL     string `json:"url_resolved"`
 }
 
-type countryItem struct {
-	Name         string `json:"name"`
-	StationCount int    `json:"stationcount"`
-}
-
-type languageItem struct {
+type listItem struct {
 	Name         string `json:"name"`
 	StationCount int    `json:"stationcount"`
 }
@@ -110,42 +105,28 @@ func fetchStationsURL(u string) ([]Station, error) {
 }
 
 func FetchCountries() ([]string, error) {
-	u := apiBase + "/countries?order=stationcount&reverse=true&hidebroken=true"
-	resp, err := httpClient.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var items []countryItem
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(items))
-	for _, c := range items {
-		if c.Name != "" {
-			names = append(names, c.Name)
-		}
-	}
-	return names, nil
+	return fetchNameList(apiBase + "/countries?order=stationcount&reverse=true&hidebroken=true")
 }
 
 func FetchLanguages() ([]string, error) {
-	u := apiBase + "/languages?order=stationcount&reverse=true&hidebroken=true"
+	return fetchNameList(apiBase + "/languages?order=stationcount&reverse=true&hidebroken=true")
+}
+
+func fetchNameList(u string) ([]string, error) {
 	resp, err := httpClient.Get(u)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var items []languageItem
+	var items []listItem
 	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
 		return nil, err
 	}
 	names := make([]string, 0, len(items))
-	for _, l := range items {
-		if l.Name != "" {
-			names = append(names, l.Name)
+	for _, item := range items {
+		if item.Name != "" {
+			names = append(names, item.Name)
 		}
 	}
 	return names, nil

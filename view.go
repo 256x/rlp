@@ -208,7 +208,7 @@ func (m model) buildSearchPopup() string {
 func (m model) renderWithStationPopup() string {
 	hints := renderHints([]string{"↑↓", "move"}, []string{"enter", "play"}, []string{"esc", "back"})
 	if m.stationLoading {
-		popup := renderPopupBox("stations", []string{"loading..."}, nil, -1, -1, 0, "", false, m.width, m.height)
+		popup := renderPopupBox("stations", []string{"loading..."}, nil, -1, -1, 0, m.width, m.height)
 		return overlay(hints, popup, m.width, m.height)
 	}
 	items := make([]string, len(m.stations))
@@ -223,11 +223,11 @@ func (m model) renderWithStationPopup() string {
 		items = []string{"(no stations)"}
 		rightLabels = nil
 	}
-	popup := renderPopupBox("stations", items, rightLabels, m.stationCursor, len(m.stations), m.stationStart, "", false, m.width, m.height)
+	popup := renderPopupBox("stations", items, rightLabels, m.stationCursor, len(m.stations), m.stationStart, m.width, m.height)
 	return overlay(hints, popup, m.width, m.height)
 }
 
-func renderPopupBox(title string, items, rightLabels []string, cursor, total, start int, filter string, filterActive bool, termW, termH int) string {
+func renderPopupBox(title string, items, rightLabels []string, cursor, total, start int, termW, termH int) string {
 	maxW := termW - 4
 	if maxW > 60 {
 		maxW = 60
@@ -244,7 +244,6 @@ func renderPopupBox(title string, items, rightLabels []string, cursor, total, st
 	}
 
 	innerW := maxW - 4
-	faint := lipgloss.NewStyle().Faint(true)
 
 	var sb strings.Builder
 
@@ -263,26 +262,13 @@ func renderPopupBox(title string, items, rightLabels []string, cursor, total, st
 		if pad < 1 {
 			pad = 1
 		}
-		sb.WriteString(titleRendered + strings.Repeat(" ", pad) + faint.Render(scrollStr))
+		sb.WriteString(titleRendered + strings.Repeat(" ", pad) + styleDim.Render(scrollStr))
 	} else {
 		sb.WriteString(titleRendered)
 	}
 	sb.WriteString("\n")
 
-	if filterActive || filter != "" {
-		indicator := "❯ "
-		if filterActive {
-			indicator = styleFilter.Render("❯ ")
-		}
-		f := runewidth.Truncate(filter, innerW-2, "…")
-		sb.WriteString(indicator + f)
-		if filterActive {
-			sb.WriteString("█")
-		}
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString(faint.Render(strings.Repeat("─", innerW)))
+	sb.WriteString(styleDim.Render(strings.Repeat("─", innerW)))
 	sb.WriteString("\n")
 
 	const prefixW = 2
@@ -319,7 +305,7 @@ func renderPopupBox(title string, items, rightLabels []string, cursor, total, st
 		} else {
 			sb.WriteString("  " + displayName)
 			if displayRl != "" {
-				sb.WriteString(faint.Render(displayRl))
+				sb.WriteString(styleDim.Render(displayRl))
 			}
 		}
 		sb.WriteString("\n")
@@ -390,87 +376,87 @@ func renderHints(pairs ...[]string) string {
 
 var countryAbbr = map[string]string{
 	"The United Kingdom of Great Britain and Northern Ireland": "UK",
-	"United Kingdom":                "UK",
-	"United States of America":      "US",
-	"The United States Of America":  "US",
-	"The United States of America":  "US",
-	"Germany":                       "DE",
-	"France":                        "FR",
-	"Japan":                         "JP",
-	"Canada":                        "CA",
-	"Australia":                     "AU",
-	"Brazil":                        "BR",
-	"Netherlands":                   "NL",
-	"Spain":                         "ES",
-	"Italy":                         "IT",
-	"Russia":                        "RU",
-	"Poland":                        "PL",
-	"Sweden":                        "SE",
-	"Norway":                        "NO",
-	"Denmark":                       "DK",
-	"Finland":                       "FI",
-	"Switzerland":                   "CH",
-	"Austria":                       "AT",
-	"Belgium":                       "BE",
-	"Portugal":                      "PT",
-	"Mexico":                        "MX",
-	"Argentina":                     "AR",
-	"China":                         "CN",
-	"India":                         "IN",
-	"South Korea":                   "KR",
-	"Korea, Republic of":            "KR",
-	"Turkey":                        "TR",
-	"Ukraine":                       "UA",
-	"Czech Republic":                "CZ",
-	"Czechia":                       "CZ",
-	"Hungary":                       "HU",
-	"Romania":                       "RO",
-	"Greece":                        "GR",
-	"Bulgaria":                      "BG",
-	"Croatia":                       "HR",
-	"Slovakia":                      "SK",
-	"Serbia":                        "RS",
-	"Ireland":                       "IE",
-	"New Zealand":                   "NZ",
-	"South Africa":                  "ZA",
-	"Israel":                        "IL",
-	"Thailand":                      "TH",
-	"Indonesia":                     "ID",
-	"Malaysia":                      "MY",
-	"Philippines":                   "PH",
-	"Vietnam":                       "VN",
-	"Pakistan":                      "PK",
-	"Bangladesh":                    "BD",
-	"Iran":                          "IR",
-	"Egypt":                         "EG",
-	"Nigeria":                       "NG",
-	"Colombia":                      "CO",
-	"Chile":                         "CL",
-	"Peru":                          "PE",
-	"Cuba":                          "CU",
-	"Iceland":                       "IS",
-	"Luxembourg":                    "LU",
-	"Slovenia":                      "SI",
-	"Lithuania":                     "LT",
-	"Latvia":                        "LV",
-	"Estonia":                       "EE",
-	"Belarus":                       "BY",
-	"Georgia":                       "GE",
-	"Armenia":                       "AM",
-	"Azerbaijan":                    "AZ",
-	"Kazakhstan":                    "KZ",
-	"Taiwan":                        "TW",
-	"Taiwan, Province of China":     "TW",
-	"Hong Kong":                     "HK",
-	"Singapore":                     "SG",
-	"Saudi Arabia":                  "SA",
-	"United Arab Emirates":          "AE",
-	"Morocco":                       "MA",
-	"Algeria":                       "DZ",
-	"Tunisia":                       "TN",
-	"Kenya":                         "KE",
-	"Ethiopia":                      "ET",
-	"Ghana":                         "GH",
+	"United Kingdom":               "UK",
+	"United States of America":     "US",
+	"The United States Of America": "US",
+	"The United States of America": "US",
+	"Germany":                      "DE",
+	"France":                       "FR",
+	"Japan":                        "JP",
+	"Canada":                       "CA",
+	"Australia":                    "AU",
+	"Brazil":                       "BR",
+	"Netherlands":                  "NL",
+	"Spain":                        "ES",
+	"Italy":                        "IT",
+	"Russia":                       "RU",
+	"Poland":                       "PL",
+	"Sweden":                       "SE",
+	"Norway":                       "NO",
+	"Denmark":                      "DK",
+	"Finland":                      "FI",
+	"Switzerland":                  "CH",
+	"Austria":                      "AT",
+	"Belgium":                      "BE",
+	"Portugal":                     "PT",
+	"Mexico":                       "MX",
+	"Argentina":                    "AR",
+	"China":                        "CN",
+	"India":                        "IN",
+	"South Korea":                  "KR",
+	"Korea, Republic of":           "KR",
+	"Turkey":                       "TR",
+	"Ukraine":                      "UA",
+	"Czech Republic":               "CZ",
+	"Czechia":                      "CZ",
+	"Hungary":                      "HU",
+	"Romania":                      "RO",
+	"Greece":                       "GR",
+	"Bulgaria":                     "BG",
+	"Croatia":                      "HR",
+	"Slovakia":                     "SK",
+	"Serbia":                       "RS",
+	"Ireland":                      "IE",
+	"New Zealand":                  "NZ",
+	"South Africa":                 "ZA",
+	"Israel":                       "IL",
+	"Thailand":                     "TH",
+	"Indonesia":                    "ID",
+	"Malaysia":                     "MY",
+	"Philippines":                  "PH",
+	"Vietnam":                      "VN",
+	"Pakistan":                     "PK",
+	"Bangladesh":                   "BD",
+	"Iran":                         "IR",
+	"Egypt":                        "EG",
+	"Nigeria":                      "NG",
+	"Colombia":                     "CO",
+	"Chile":                        "CL",
+	"Peru":                         "PE",
+	"Cuba":                         "CU",
+	"Iceland":                      "IS",
+	"Luxembourg":                   "LU",
+	"Slovenia":                     "SI",
+	"Lithuania":                    "LT",
+	"Latvia":                       "LV",
+	"Estonia":                      "EE",
+	"Belarus":                      "BY",
+	"Georgia":                      "GE",
+	"Armenia":                      "AM",
+	"Azerbaijan":                   "AZ",
+	"Kazakhstan":                   "KZ",
+	"Taiwan":                       "TW",
+	"Taiwan, Province of China":    "TW",
+	"Hong Kong":                    "HK",
+	"Singapore":                    "SG",
+	"Saudi Arabia":                 "SA",
+	"United Arab Emirates":         "AE",
+	"Morocco":                      "MA",
+	"Algeria":                      "DZ",
+	"Tunisia":                      "TN",
+	"Kenya":                        "KE",
+	"Ethiopia":                     "ET",
+	"Ghana":                        "GH",
 }
 
 func abbrevCountry(name string) string {
