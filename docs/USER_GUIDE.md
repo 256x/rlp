@@ -16,7 +16,7 @@ Same as tmux — rlp detects the `ZELLIJ` environment variable and opens a float
 
 ### Standalone terminal
 
-rlp also works outside tmux/Zellij. Pressing `Space` opens the station selector inline using the alternate screen buffer. Most terminals work fine; some (e.g. Terminator) may have rendering issues.
+rlp also works outside tmux/Zellij. Pressing `Space` opens the station selector inline using the alternate screen buffer.
 
 ---
 
@@ -25,26 +25,28 @@ rlp also works outside tmux/Zellij. Pressing `Space` opens the station selector 
 The player screen occupies a single line:
 
 ```
-- Station Name @ Country  128kbps
+[rlp] Station Name [XX]  |  Track Title
 ```
+
+`[XX]` is the two-letter country abbreviation. The track title (ICY metadata) appears when the stream provides it.
 
 | State | Display |
 |-------|---------|
-| No station selected | `- rlp - [space] select/search` |
-| Connecting | Spinner `-\|/` animates for ~4 seconds |
-| Playing | `-` prefix with station info |
+| No station selected | `[rlp] [space] select/search` |
+| Connecting | Station name animates with a color gradient for ~4 seconds |
+| Playing | Station name + track title with animated gradient |
 | Stream ended / unreachable | Status message for 4 seconds |
 
 ### Volume Control
 
-While on the player screen, adjust the system default sink volume via `pactl`:
+Adjusts the system default sink volume via `pactl`:
 
 | Key | Action |
 |-----|--------|
 | `k` or `↑` | +5% |
 | `j` or `↓` | −5% |
 
-The current volume level is shown briefly as a status message after each adjustment.
+The current volume level is shown briefly as a status message.
 
 ### Quitting
 
@@ -87,7 +89,7 @@ Country and Language lists are cached to `~/.cache/rlp/` as JSON files with a 24
 
 After selecting a genre / country / language / name query, up to 50 stations are shown ordered by popularity.
 
-Station lines show the name on the left and country + bitrate on the right. If the line is too narrow, the details are truncated — the station name is always fully visible.
+Each line shows the station name on the left and the country abbreviation on the right.
 
 | Key | Action |
 |-----|--------|
@@ -109,4 +111,4 @@ rlp delegates audio to `mpv`:
 
 ### State persistence
 
-The last-played station is saved to `~/.cache/rlp/current.json`. The `mpv` process ID is tracked in `~/.cache/rlp/mpv.pid`. On restart, if `mpv` is still running, rlp displays the station as active. If not, the player starts blank.
+The last-played station is saved to `~/.cache/rlp/current.json`. The `mpv` process ID is tracked in `~/.cache/rlp/mpv.pid`. On restart, if `mpv` is still running, rlp displays the station as active.

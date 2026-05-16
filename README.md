@@ -1,6 +1,6 @@
 # rlp
 
-**one-line terminal Internet radio list player powered by [radio-browser.info](https://www.radio-browser.info/).**
+**one-line terminal Internet radio player powered by [radio-browser.info](https://www.radio-browser.info/).**
 
 ![rlp](https://github.com/user-attachments/assets/fd0cd74e-8ecf-4077-852c-7ea064e4216f)
 
@@ -10,13 +10,15 @@ Built with [Bubbletea](https://github.com/charmbracelet/bubbletea). Designed to 
 
 - Search stations by **Genre**, **Country**, **Language**, or **Name**
 - Live stream via `mpv`
+- Animated gradient display during playback
 - Volume control with `j` / `k` / cursor keys
-- Connecting spinner and stream failure detection
+- Track title polling via mpv IPC
 - Country/Language list caching (24h TTL)
 - tmux / Zellij `display-popup` integration
 
 ## Requirements
 
+- Go 1.22+
 - `mpv`
 - `pactl` (PipeWire / PulseAudio)
 - tmux or Zellij (recommended)
@@ -37,11 +39,11 @@ go build -o ~/.local/bin/rlp .
 
 ## Usage
 
-```bash
-rlp
+```
+rlp [--version]
 ```
 
-Press `Space` to open the station selector. In tmux or Zellij, the selector opens as a floating popup centered on screen. In a standalone terminal, it opens inline.
+Press `Space` to open the station selector. In tmux or Zellij, the selector opens as a floating popup. In a standalone terminal, it opens inline using the alternate screen.
 
 ## Key Bindings
 
@@ -78,4 +80,4 @@ Press `Space` to open the station selector. In tmux or Zellij, the selector open
 
 ## License
 
-MIT
+[MIT](LICENSE)
