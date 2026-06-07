@@ -12,11 +12,18 @@ import (
 
 var grad *Gradient
 
-func initGradient() {
-	base, _ := colorful.Hex("#84a0c6")
+func queryTerminalFgHex() string {
 	output := termenv.NewOutput(os.Stdout)
 	if rgb, ok := output.ForegroundColor().(termenv.RGBColor); ok {
-		if c, err := colorful.Hex(string(rgb)); err == nil {
+		return string(rgb)
+	}
+	return ""
+}
+
+func initGradient() {
+	base, _ := colorful.Hex("#84a0c6")
+	if hex := queryTerminalFgHex(); hex != "" {
+		if c, err := colorful.Hex(hex); err == nil {
 			base = c
 		}
 	}

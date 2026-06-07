@@ -271,41 +271,40 @@ func renderPopupBox(title string, items, rightLabels []string, cursor, total, st
 	sb.WriteString(styleDim.Render(strings.Repeat("─", innerW)))
 	sb.WriteString("\n")
 
+	rightW := 0
+	if rightLabels != nil {
+		for _, r := range rightLabels {
+			if w := runewidth.StringWidth(r); w > rightW {
+				rightW = w
+			}
+		}
+		if rightW > 0 {
+			rightW++
+		}
+	}
 	const prefixW = 2
-	avail := innerW - prefixW
+	textW := innerW - prefixW - rightW
 
 	for i := start; i < end; i++ {
 		rl := ""
 		if rightLabels != nil && i < len(rightLabels) {
 			rl = rightLabels[i]
 		}
-		name := items[i]
-		nameW := runewidth.StringWidth(name)
-		rlW := runewidth.StringWidth(rl)
-
-		var displayName, displayRl string
-		if rl == "" {
-			displayName = runewidth.FillRight(name, avail)
-		} else if nameW+1+rlW <= avail {
-			pad := avail - nameW - rlW
-			displayName = name + strings.Repeat(" ", pad)
-			displayRl = rl
-		} else {
-			remaining := avail - nameW - 1
-			if remaining >= 1 {
-				displayRl = runewidth.Truncate(rl, remaining, "…")
-				displayName = name + " "
-			} else {
-				displayName = runewidth.FillRight(name, avail)
-			}
+		text := items[i]
+		if textW > 0 {
+			text = runewidth.Truncate(text, textW, "…")
+			text = runewidth.FillRight(text, textW)
 		}
-
 		if i == cursor {
-			sb.WriteString(styleSelected.Render("❯ " + displayName + displayRl))
+			full := "❯ " + text
+			if rightW > 0 {
+				full += " " + runewidth.FillRight(rl, rightW-1)
+			}
+			sb.WriteString(styleSelected.Render(full))
 		} else {
-			sb.WriteString("  " + displayName)
-			if displayRl != "" {
-				sb.WriteString(styleDim.Render(displayRl))
+			sb.WriteString("  " + text)
+			if rightW > 0 {
+				sb.WriteString(" " + styleDim.Render(runewidth.FillRight(rl, rightW-1)))
 			}
 		}
 		sb.WriteString("\n")
