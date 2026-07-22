@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var version = "1.0.0"
+var version = "1.0.1"
 
 var rlpProgram *tea.Program
 
